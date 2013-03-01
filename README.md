@@ -2,15 +2,17 @@
 
 <h2>Overview</h2>
 
-A few exercises prior, we added the capability to persist the state of the board. We created a class called ```FilePersistenceStrategy``` to store the state of a board in a file. 
+A few exercises prior, we added capability to persist the state of the board. We created a class called ```FilePersistenceStrategy``` to store the state of a board in a file. 
 
-In this project we will learn how to use **JDBC** to save data in a relational database. Once we have implemented this functionality, we will have two ways of saving the state of a board – a file, and a database. Therefore, this feature also brings added choices. The Minesweeper software needs a way to determine which mechanism it should use for saving the state of Board. In the past, we used _config.properties_ to specify the file where the board's state should be stored. Here are the contents of _config.properties_ for your reference.
+In this project we will learn how to use **JDBC** to save data in a relational database. Once we have implemented this functionality, we will have two ways of saving the state of a board – a file, and a database. Therefore, this feature also brings added choices. The Minesweeper software needs a way to determine which mechanism it should use for saving the Board's state. 
+
+In the past, we have used _config.properties_ to specify the file where the board's state should be stored. Here are the contents of _config.properties_ for your reference.
 
     persistence.filename=/home/pshah/tmp/jminesweeper.db
 
 _**File Sample 1: config.properties**_
 
-As you can see, this file contains only one line - the name og the file in which data has to be persisted. Till now, file persistence was the only way to save the state of a board, so we specify the name of the file in which the data has to be saved. We did not need anything beyond this. However, now we have one more option – database persistence. Therefore, we need to add an additional property which will determine, what kind of persistence should be used. 
+As you can see, config.properties contains only one line of configuration - the name of the file in which data has to be persisted. Till now, file persistence was the only way to save the state of a board, so we specified the filename in which the data had to be saved. We did not need any further configuration. However, now we have one more option – database persistence. Therefore, we need to add an additional property which will determine, what kind of persistence should be used.
 
 We will use a property called ```persistence.strategy``` to specify the persistence strategy.
 
@@ -38,7 +40,7 @@ Instead of this, if we use the fully qualified class name of the persistence str
 
 _**File Sample 2: config.properties**_
 
-If we use properties as shown above, our code will be a single like which instantiates an instance of persistenceStrategy using reflection, as shown in the pseudo code below.
+If we use properties as shown above, our code will be a single line which instantiates an instance of persistenceStrategy using reflection, as shown in the pseudo code below.
 
     persistenceStrategy = //use_reflection_to_instantiate_class
 
@@ -55,7 +57,7 @@ Had we used the database persistence strategy, we would have needed a different 
 
 Specifying a persistence strategy and all the information it needs, is the first part of the puzzle. The next thing we need to figure out is, how do we make these details available to the specific persistence strategy ? Or in other words, what is a good way for the specific persistence strategy to get all the details it needs ? Note the words we have used in the line above - _what is a good way ?_ It's not just about giving information to the persistence strategy, it is about doing it in a way that is _good_ (readable, maintainable, etc). There are several ways of achieving this. We will choose the simplest of these and directly supply an instance of ```Properties``` to the persistence strategy. 
 
-How do we give an instance of Proeprties to the specific ```PersistenceStrategy``` object ? We can either give an instance of ```Properties``` to the constructor of the ```PersistenceStrategy``` when we instantiate it, or alternatively, we can add a method called ```configure(Properties configProps)``` to the interface ```PersistenceStrategy```. We are in not in favor of the first approach, because we cannot enforce every  implementation of ```PersistenceStrategy``` to provide a constructor that takes a ```Properties``` argument. But if we use the second approach, we can definitely ensure that every class that implements ```PersistenceStrategy```, provides a configure method which takes a ```Properties``` object as argument (otherwise the code will not even compile). This method has the responsibility of configuring it's owning object with appropriate values.
+How do we give an instance of Proeprties to the specific ```PersistenceStrategy``` object ? We can either give an instance of ```Properties``` to the constructor of the ```PersistenceStrategy``` when we instantiate it, or alternatively, we can add a method called ```configure(Properties configProps)``` to the interface ```PersistenceStrategy```. We are in not in favor of the first approach, because we cannot enforce every  implementation of ```PersistenceStrategy``` to provide a constructor that takes a ```Properties``` argument. But if we use the second approach, we can definitely ensure that every class that implements ```PersistenceStrategy```, provides a ```configure``` method which takes a ```Properties``` object as argument (otherwise the code will not even compile). This method has the responsibility of configuring it's owning object with appropriate values.
 
 This is what the new ```PersistenceStrategy``` interface looks like.
 
@@ -78,7 +80,7 @@ While the code is run in production mode, this method will be called from the ``
 
 If you look at the code carefully, you will notice that we have moved the interface ```PersistenceStrategy``` to a different package. Earlier it was in the package ```com.diycomputerscience.minesweeper```, and now it has been moved to a package called  ```com.diycomputerscience.minesweeper.model``` . We have created this new package for all model classes.
 
-Till now PersistenceStrategy had only one implementation - ```FilePersistenceStrategy```. In this project, we have also created another implementation called ```JDBCPersistenceStrategy```, which implements the functionality of saving and restoring a ````Board``` from a relation database. ```JDBCPersistenceStrategy``` does not directly interact with the database, but does so through a ```BoardDao``` object. Therefore it needs to be given a ```BoardDao``` implementation, which it will use to actually interact with the database. Take a look at the code in ```JDBCPersistenceStrategy```. It is quite self evident. We have used BoardDao to explain how to the [DAO](http://www.oracle.com/technetwork/java/dataaccessobject-138824.html) design pattern.
+Till now ```PersistenceStrategy``` had only one implementation - ```FilePersistenceStrategy```. In this project, we have also created another implementation called ```JDBCPersistenceStrategy```, which implements the functionality of saving and restoring a ````Board``` from a relation database. ```JDBCPersistenceStrategy``` does not directly interact with the database, but does so through a ```BoardDao``` object. Therefore it needs to be given a ```BoardDao``` implementation, which it will use to actually interact with the database. Take a look at the code in ```JDBCPersistenceStrategy```. It is quite self evident. ```BoardDao``` is an interface which at the moment has one implementation, ```BoardDaoJDBC```. ```JDBCPersistenceStrategy``` uses ```BoardDaoJDBC``` to actually communicate with the database. We decided to implement ```BoardDao``` because we think it will decouple the strategy from the actual database communication code. This is great for explaining the [DAO](http://www.oracle.com/technetwork/java/dataaccessobject-138824.html) design pattern, but in retrospect we will realize that the design was a bit over zealous in creating unnecessary layers. But we will let that wisdom dawn on us later :-)
 
 In this project, you have to implement the ```BoardDaoJDBC``` (an implementation of ```BoardDao```) class which actually interacts with a database. You also have to implement the ```DBInit``` class which creates the initial schema.
 
